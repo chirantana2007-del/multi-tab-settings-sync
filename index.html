@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Settings Sync</title>
+
+  <!-- Anti-flash: runs synchronously BEFORE first paint, so a new tab
+       never shows the wrong theme, font size or language. -->
+  <script>
+    (function () {
+      try {
+        var raw = localStorage.getItem('gdg-settings-v1');
+        var s = raw ? JSON.parse(raw) : {};
+        var d = document.documentElement;
+        var t = s.theme && s.theme.value;
+        if (t !== 'dark' && t !== 'light') {
+          t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        d.dataset.theme = t;
+        var f = s.fontSize && s.fontSize.value;
+        if (typeof f === 'number' && f >= 12 && f <= 28) d.style.setProperty('--font-size', f + 'px');
+        var l = s.lang && s.lang.value;
+        if (['en', 'hi', 'ta', 'es'].indexOf(l) > -1) d.lang = l;
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+  <main class="card">
+    <header>
+      <h1 data-i18n="title"></h1>
+      <p class="muted" data-i18n="subtitle"></p>
+    </header>
+
+    <section class="controls">
+      <label class="row">
+        <span data-i18n="darkMode"></span>
+        <input id="theme" type="checkbox" role="switch" />
+      </label>
+
+      <label class="row">
+        <span data-i18n="language"></span>
+        <select id="lang">
+          <option value="en">English</option>
+          <option value="hi">हिन्दी</option>
+          <option value="ta">தமிழ்</option>
+          <option value="es">Español</option>
+        </select>
+      </label>
+
+      <label class="row">
+        <span data-i18n="fontSize"></span>
+        <span class="slider">
+          <input id="fontSize" type="range" min="12" max="28" step="1" />
+          <output id="fontOut"></output>
+        </span>
+      </label>
+    </section>
+
+    <section class="preview"><p data-i18n="sample"></p></section>
+
+    <section class="status">
+      <span id="tabBadge" class="badge"></span>
+      <span id="latency" class="badge"></span>
+      <button id="conflict" type="button" data-i18n="simulate"></button>
+    </section>
+
+    <ul id="log" aria-live="polite"></ul>
+  </main>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
