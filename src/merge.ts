@@ -1,16 +1,15 @@
 import {
-  FONT_MAX, FONT_MIN, LANGS,
-  type SettingKey, type Versioned, type VersionedState,
+  ACCENTS, FONT_MAX, FONT_MIN, LANGS,
+  type SettingKey, type Settings, type Versioned, type VersionedState,
 } from './types';
 
-export const KEYS: SettingKey[] = ['theme', 'lang', 'fontSize'];
+export const KEYS: SettingKey[] = ['theme', 'lang', 'fontSize', 'accent'];
 
 /**
  * Deterministic winner between two versions of ONE setting.
  * 1. higher Lamport clock wins
  * 2. tie -> lexicographically higher tabId wins
  * 3. (impossible in practice) same clock + same tab -> compare serialized value
- * Commutative, associative, idempotent => all tabs converge.
  */
 export function pickWinner<T>(a: Versioned<T>, b: Versioned<T>): Versioned<T> {
   if (a.clock !== b.clock) return a.clock > b.clock ? a : b;
@@ -51,6 +50,7 @@ const validators: Record<SettingKey, (v: unknown) => boolean> = {
   lang: (v) => (LANGS as readonly unknown[]).includes(v),
   fontSize: (v) =>
     typeof v === 'number' && Number.isFinite(v) && v >= FONT_MIN && v <= FONT_MAX,
+  accent: (v) => (ACCENTS as readonly unknown[]).includes(v),
 };
 
 /** Never trust storage or channel data: validate and drop anything malformed. */
@@ -69,4 +69,24 @@ export function sanitize(raw: unknown): Partial<VersionedState> {
     }
   }
   return out as Partial<VersionedState>;
+}
+
+/**
+ * Parse an imported settings file. Accepts either the exported format
+ * ({ app, version, settings: {...} }) or a bare { theme, lang, ... } object.
+ * Invalid or unknown values are silently dropped.
+ */
+export function parseImported(raw: unknown): Partial<Settings> {
+  if (typeof raw !== 'object' || raw === null) return {};
+  const obj = raw as Record<string, unknown>;
+  const src =
+    typeof obj.settings === 'object' && obj.settings !== null
+      ? (obj.settings as Record<string, unknown>)
+      : obj;
+  const out: Record<string, unknown> = {};
+  for (const k of KEYS) {
+    const v = src[k];
+    if (v !== undefined && validators[k](v)) out[k] = v;
+  }
+  return out as Partial<Settings>;
 }

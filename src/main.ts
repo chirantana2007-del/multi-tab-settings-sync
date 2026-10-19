@@ -1,9 +1,11 @@
 import './style.css';
+import { exportSettings, readSettingsFile } from './io';
 import { mergeState } from './merge';
-import { loadState, readStored, saveState } from './persistence';
+import { defaultSettings, loadState, readStored, saveState } from './persistence';
 import { Store } from './store';
 import { Sync, now } from './sync';
-import { initUI, log, render, showLatency } from './ui';
+import { TabTracker } from './tabs';
+import { flash, initUI, log, render, showLatency, showTabs } from './ui';
 import type { VersionedState } from './types';
 
 const tabId = Math.random().toString(36).slice(2, 8);
@@ -11,6 +13,9 @@ const store = new Store(loadState(), tabId);
 
 // Read-merge-write so two tabs saving at once can't drop each other's keys
 const persist = (s: VersionedState) => saveState(mergeState(s, readStored()));
+
+const paint = () =>
+  render(store.values(), { undo: store.canUndo(), redo: store.canRedo() });
 
 const sync = new Sync((remote, sentAt) => {
   if (store.receive(remote)) {
@@ -21,19 +26,48 @@ const sync = new Sync((remote, sentAt) => {
   }
 });
 
-store.subscribe((_state, origin) => {
-  render(store.values());
-  if (origin === 'local') {
-    persist(store.get());
-    sync.broadcast(store.get()); // full state: a tab that missed a message self-heals
+store.subscribe((state, origin, changed) => {
+  paint();
+  if (origin === 'remote') {
+    for (const k of changed) flash(k, state[k].tabId);
+  } else {
+    persist(state);
+    sync.broadcast(state); // full state: a tab that missed a message self-heals
   }
 });
 
+new TabTracker(tabId, showTabs);
+
 initUI(
   {
-    onTheme: (v) => store.set('theme', v),
-    onLang: (v) => store.set('lang', v),
-    onFont: (v) => store.set('fontSize', v),
+    onTheme: (v) => store.setMany({ theme: v }),
+    onLang: (v) => store.setMany({ lang: v }),
+    onFont: (v) => store.setMany({ fontSize: v }),
+    onAccent: (v) => store.setMany({ accent: v }),
+    onUndo: () => store.undo(),
+    onRedo: () => store.redo(),
+    onReset: () => {
+      store.setMany(defaultSettings());
+      log('Reset to defaults (undoable)');
+    },
+    onExport: () => {
+      exportSettings(store.values());
+      log('Settings exported to settings.json');
+    },
+    onImport: async (file) => {
+      try {
+        const parsed = await readSettingsFile(file);
+        const n = Object.keys(parsed).length;
+        if (n === 0) {
+          log('Import failed: no valid settings found in that file');
+          return;
+        }
+        store.setMany(parsed);
+        log(`Imported ${n} setting(s) (undoable)`);
+      } catch {
+        log('Import failed: not a valid settings file');
+      }
+    },
     onConflict: () => {
       // Two edits to the same key with the SAME clock, from two different "tabs".
       const clock = store.nextClock();
@@ -53,4 +87,12 @@ initUI(
   tabId,
 );
 
-render(store.values());
+// Ctrl/Cmd+Z = undo, Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y = redo
+document.addEventListener('keydown', (e) => {
+  if (!(e.ctrlKey || e.metaKey)) return;
+  const k = e.key.toLowerCase();
+  if (k === 'z' && !e.shiftKey) { e.preventDefault(); store.undo(); }
+  else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); store.redo(); }
+});
+
+paint();

@@ -6,7 +6,7 @@
   <title>Settings Sync</title>
 
   <!-- Anti-flash: runs synchronously BEFORE first paint, so a new tab
-       never shows the wrong theme, font size or language. -->
+       never shows the wrong theme, accent, font size, language or direction. -->
   <script>
     (function () {
       try {
@@ -21,7 +21,12 @@
         var f = s.fontSize && s.fontSize.value;
         if (typeof f === 'number' && f >= 12 && f <= 28) d.style.setProperty('--font-size', f + 'px');
         var l = s.lang && s.lang.value;
-        if (['en', 'hi', 'ta', 'es'].indexOf(l) > -1) d.lang = l;
+        if (['en', 'hi', 'ta', 'es', 'ur'].indexOf(l) > -1) {
+          d.lang = l;
+          d.dir = l === 'ur' ? 'rtl' : 'ltr';
+        }
+        var a = s.accent && s.accent.value;
+        if (['blue', 'green', 'purple', 'orange', 'pink'].indexOf(a) > -1) d.dataset.accent = a;
       } catch (e) {}
     })();
   </script>
@@ -34,34 +39,56 @@
     </header>
 
     <section class="controls">
-      <label class="row">
-        <span data-i18n="darkMode"></span>
+      <label class="row" data-key="theme">
+        <span class="lbl"><span data-i18n="darkMode"></span><small class="from"></small></span>
         <input id="theme" type="checkbox" role="switch" />
       </label>
 
-      <label class="row">
-        <span data-i18n="language"></span>
+      <label class="row" data-key="lang">
+        <span class="lbl"><span data-i18n="language"></span><small class="from"></small></span>
         <select id="lang">
           <option value="en">English</option>
           <option value="hi">हिन्दी</option>
           <option value="ta">தமிழ்</option>
           <option value="es">Español</option>
+          <option value="ur">اردو</option>
         </select>
       </label>
 
-      <label class="row">
-        <span data-i18n="fontSize"></span>
+      <label class="row" data-key="fontSize">
+        <span class="lbl"><span data-i18n="fontSize"></span><small class="from"></small></span>
         <span class="slider">
           <input id="fontSize" type="range" min="12" max="28" step="1" />
           <output id="fontOut"></output>
         </span>
       </label>
+
+      <div class="row" data-key="accent">
+        <span class="lbl"><span id="accentLabel" data-i18n="accent"></span><small class="from"></small></span>
+        <span class="swatches" role="radiogroup" aria-labelledby="accentLabel">
+          <button type="button" class="swatch" role="radio" aria-checked="false" aria-label="Blue" data-accent="blue"></button>
+          <button type="button" class="swatch" role="radio" aria-checked="false" aria-label="Green" data-accent="green"></button>
+          <button type="button" class="swatch" role="radio" aria-checked="false" aria-label="Purple" data-accent="purple"></button>
+          <button type="button" class="swatch" role="radio" aria-checked="false" aria-label="Orange" data-accent="orange"></button>
+          <button type="button" class="swatch" role="radio" aria-checked="false" aria-label="Pink" data-accent="pink"></button>
+        </span>
+      </div>
+    </section>
+
+    <section class="toolbar">
+      <button id="undo" type="button" data-i18n="undo"></button>
+      <button id="redo" type="button" data-i18n="redo"></button>
+      <button id="reset" type="button" data-i18n="reset"></button>
+      <button id="export" type="button" data-i18n="export"></button>
+      <button id="import" type="button" data-i18n="import"></button>
+      <input id="importFile" type="file" accept="application/json,.json" hidden />
     </section>
 
     <section class="preview"><p data-i18n="sample"></p></section>
 
     <section class="status">
       <span id="tabBadge" class="badge"></span>
+      <span id="tabsBadge" class="badge"></span>
       <span id="latency" class="badge"></span>
       <button id="conflict" type="button" data-i18n="simulate"></button>
     </section>

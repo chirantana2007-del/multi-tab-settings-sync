@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mergeState, pickWinner } from '../src/merge';
+import { mergeState, parseImported, pickWinner } from '../src/merge';
 import type { Versioned, VersionedState } from '../src/types';
 
 const v = <T>(value: T, clock: number, tabId: string): Versioned<T> => ({
@@ -12,6 +12,7 @@ const base: VersionedState = {
   theme: v('light', 0, ''),
   lang: v('en', 0, ''),
   fontSize: v(16, 0, ''),
+  accent: v('blue', 0, ''),
 };
 
 describe('pickWinner', () => {
@@ -43,21 +44,42 @@ describe('mergeState', () => {
     const e1: Partial<VersionedState> = {
       theme: v('dark', 1, 'tab-a'),
       fontSize: v(20, 2, 'tab-a'),
+      accent: v('green', 3, 'tab-a'),
     };
     const e2: Partial<VersionedState> = {
       theme: v('light', 1, 'tab-b'),
       fontSize: v(14, 2, 'tab-b'),
+      accent: v('pink', 3, 'tab-b'),
     };
     const ab = mergeState(mergeState(base, e1), e2);
     const ba = mergeState(mergeState(base, e2), e1);
     expect(ab).toEqual(ba);
-    expect(ab.theme.value).toBe('light'); // same clock -> higher tabId ("tab-b") wins
-    expect(ab.fontSize.value).toBe(14);   // same clock -> "tab-b" wins here too
+    expect(ab.theme.value).toBe('light'); // same clock -> higher tabId wins
+    expect(ab.fontSize.value).toBe(14);
+    expect(ab.accent.value).toBe('pink');
   });
 
   it('is idempotent', () => {
     const e: Partial<VersionedState> = { theme: v('dark', 1, 'a') };
     const once = mergeState(base, e);
     expect(mergeState(once, e)).toEqual(once);
+  });
+});
+
+describe('parseImported', () => {
+  it('keeps valid values and drops invalid ones', () => {
+    expect(parseImported({ theme: 'dark', lang: 'xx', fontSize: 99, accent: 'pink' }))
+      .toEqual({ theme: 'dark', accent: 'pink' });
+  });
+
+  it('accepts the exported file format', () => {
+    const file = { app: 'gdg-settings-sync', version: 1, settings: { lang: 'ur', fontSize: 20 } };
+    expect(parseImported(file)).toEqual({ lang: 'ur', fontSize: 20 });
+  });
+
+  it('returns nothing for junk input', () => {
+    expect(parseImported(null)).toEqual({});
+    expect(parseImported('hello')).toEqual({});
+    expect(parseImported(42)).toEqual({});
   });
 });

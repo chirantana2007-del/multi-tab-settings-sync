@@ -1,14 +1,21 @@
 import { mergeState, sanitize } from './merge';
-import type { VersionedState } from './types';
+import type { Settings, VersionedState } from './types';
 
 export const STORAGE_KEY = 'gdg-settings-v1';
 
-export function defaultState(): VersionedState {
+/** Plain default values (also used by "Reset to defaults"). */
+export function defaultSettings(): Settings {
   const dark = window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
+  return { theme: dark ? 'dark' : 'light', lang: 'en', fontSize: 16, accent: 'blue' };
+}
+
+export function defaultState(): VersionedState {
+  const d = defaultSettings();
   return {
-    theme: { value: dark ? 'dark' : 'light', clock: 0, tabId: '' },
-    lang: { value: 'en', clock: 0, tabId: '' },
-    fontSize: { value: 16, clock: 0, tabId: '' },
+    theme: { value: d.theme, clock: 0, tabId: '' },
+    lang: { value: d.lang, clock: 0, tabId: '' },
+    fontSize: { value: d.fontSize, clock: 0, tabId: '' },
+    accent: { value: d.accent, clock: 0, tabId: '' },
   };
 }
 
