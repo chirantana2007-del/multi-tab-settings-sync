@@ -1,5 +1,10 @@
 :root {
   --font-size: 16px;
+  /* How much the layout (card, buttons, spacing) follows the text size.
+     0 = text only, 1 = full zoom. 0.35 is a middle ground. */
+  --ui-ratio: 0.35;
+  --ui: calc(16px + (var(--font-size) - 16px) * var(--ui-ratio));
+
   --bg: #f4f6fa; --fg: #14181f; --card: #ffffff;
   --muted: #5c6675; --border: #dde1e8; --ok: #137333;
   --a-light: #1a56db; --a-dark: #6ea0ff;
@@ -20,9 +25,12 @@
 :root[data-accent='pink']   { --a-light: #be185d; --a-dark: #f472b6; }
 
 * { box-sizing: border-box; }
-html { font-size: var(--font-size); transition: font-size 0.12s ease-out; }
+
+/* rem = layout scale (grows slowly); text uses the full font size via body */
+html { font-size: var(--ui); transition: font-size 0.12s ease-out; }
 body {
   margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 1rem;
+  font-size: var(--font-size);
   background: var(--bg); color: var(--fg);
   font-family: system-ui, -apple-system, 'Segoe UI', 'Noto Sans', 'Noto Sans Devanagari',
     'Noto Sans Tamil', 'Noto Nastaliq Urdu', 'Noto Sans Arabic', 'Segoe UI Historic', Tahoma, sans-serif;
@@ -32,12 +40,11 @@ body {
 /* hidden until first render so nothing flashes */
 html:not([data-ready]) main { visibility: hidden; }
 
-/* centered card: grows outward from all sides as the font size increases */
 .card {
   width: min(36rem, 100%); background: var(--card);
   border: 1px solid var(--border); border-radius: 0.75rem; padding: 1.5rem;
 }
-h1 { margin: 0 0 0.25rem; font-size: 1.6rem; }
+h1 { margin: 0 0 0.25rem; font-size: 1.6em; }
 .muted { color: var(--muted); margin: 0 0 1.25rem; }
 
 .controls { display: grid; gap: 0.5rem; }
@@ -46,7 +53,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.6rem; }
   gap: 1rem; flex-wrap: wrap; padding: 0.4rem 0.6rem; border-radius: 0.5rem;
 }
 .lbl { display: grid; min-width: 0; }
-.from { color: var(--accent); font-size: 0.75rem; }
+.from { color: var(--accent); font-size: 0.75em; }
 
 /* "updated from tab X" highlight */
 .row.flash { animation: flash 2.5s ease-out; }
@@ -57,7 +64,7 @@ h1 { margin: 0 0 0.25rem; font-size: 1.6rem; }
 
 .slider { display: flex; align-items: center; gap: 0.75rem; }
 .slider input[type='range'] { width: 240px; max-width: 100%; touch-action: none; }
-output { min-width: 4ch; text-align: end; color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; }
+output { min-width: 4ch; text-align: end; color: var(--muted); font-size: 0.875em; font-variant-numeric: tabular-nums; }
 
 select, button {
   font: inherit; color: inherit; background: var(--bg);
@@ -93,19 +100,19 @@ input[role='switch']:checked::after { transform: translateX(1.15rem); }
 .swatch[aria-checked='true'] { border-color: var(--fg); box-shadow: 0 0 0 2px var(--card) inset; }
 
 .toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
-.toolbar button { font-size: 0.9rem; }
+.toolbar button { font-size: 0.9em; }
 
 .preview { margin: 1.25rem 0; padding: 1rem; border: 1px dashed var(--border); border-radius: 0.5rem; }
 .preview p { margin: 0; }
 
 .status { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
-.badge { font-size: 0.8rem; padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+.badge { font-size: 0.8em; padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
 .badge.ok { color: var(--ok); border-color: var(--ok); }
-.status button { margin-inline-start: auto; font-size: 0.85rem; }
+.status button { margin-inline-start: auto; font-size: 0.85em; }
 
 #log {
   list-style: none; margin: 1rem 0 0; padding: 0;
-  font: 0.75rem ui-monospace, monospace; color: var(--muted);
+  font: 0.75em ui-monospace, monospace; color: var(--muted);
   direction: ltr; text-align: left;
 }
 #log li { padding: 0.15rem 0; }
